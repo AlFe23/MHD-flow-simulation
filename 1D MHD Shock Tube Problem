@@ -1,0 +1,424 @@
+% 1D MHD Shock Tube Problem
+
+clear variables
+close all
+
+
+jmax = 1600 %Numero di celle in cui si discretizza il dominio
+h = 1/jmax;
+x = linspace(0,1,jmax);
+
+% %Condizioni iniziali : Brio-Wu Shock tube problem 
+rho_L = 1*ones(1,jmax/2);
+rho_R = 0.125*ones(1,jmax/2);
+rho0 = [rho_L rho_R];
+u0 = zeros(1,jmax);
+v0 = zeros(1,jmax);
+w0 = zeros(1,jmax);
+p_L = 1*ones(1,jmax/2);
+p_R = 0.1*ones(1,jmax/2);
+p0 = [p_L p_R];
+By_L = 1*ones(1,jmax/2);
+By_R = -1*ones(1,jmax/2);
+By0 = [By_L By_R];
+Bz0 = 0.00*ones(1,jmax);
+Bx0 =0.75*ones(1,jmax);
+
+% %Condizioni iniziali : Brio-Wu -- High Mach
+% rho_L = 1*ones(1,jmax/2);
+% rho_R = 0.125*ones(1,jmax/2);
+% rho0 = [rho_L rho_R];
+% u0 = zeros(1,jmax);
+% v0 = zeros(1,jmax);
+% w0 = zeros(1,jmax);
+% p_L = 1000*ones(1,jmax/2);
+% p_R = 0.1*ones(1,jmax/2);
+% p0 = [p_L p_R];
+% By_L = 1*ones(1,jmax/2);
+% By_R = -1*ones(1,jmax/2);
+% By0 = [By_L By_R];
+% Bz0 = 0.00*ones(1,jmax);
+% Bx0 =0*ones(1,jmax);
+
+% %Condizioni Iniziali: Alfvèn Wave
+% rho_L = 1*ones(1,jmax/2);
+% rho_R = 1*ones(1,jmax/2);
+% rho0 = [rho_L rho_R];
+% u0 = zeros(1,jmax);
+% v0 = ones(1,jmax);
+% w0 = ones(1,jmax);
+% p_L = 1*ones(1,jmax/2);
+% p_R =1*ones(1,jmax/2);
+% p0 = [p_L p_R]
+%     Bx0 = 1*ones(1,jmax);
+% By_L = 1*ones(1,jmax/2);
+% By_R = 1*ones(1,jmax/2);
+% By0 = [By_L By_R];
+% Bz0 = 0.00*ones(1,jmax);
+
+
+% % Condizioni Iniziali: Torrilhon test ref.437 of Goedbloed advanced MHD book
+% rho_L = 3*ones(1,jmax/2);
+% rho_R = 1*ones(1,jmax/2);
+% rho0 = [rho_L rho_R];
+% u0 = zeros(1,jmax);
+% v0 = zeros(1,jmax);
+% w0_L = 0*ones(1,jmax/2);
+% w0_R = 0*ones(1,jmax/2);
+% w0 = [w0_L w0_R];
+% p_L = 3*ones(1,jmax/2);
+% p_R =1*ones(1,jmax/2);
+% p0 = [p_L p_R];
+% By_L = 1*ones(1,jmax/2);
+% By_R = cos(1.5)*ones(1,jmax/2);
+% By0 = [By_L By_R];
+% Bz_L = 0*ones(1,jmax/2);
+% Bz_R = sin(1.5)*ones(1,jmax/2);
+% Bz0= [Bz_L Bz_R];
+% Bx0 =3/2*ones(1,jmax);
+
+%Fast rarefaction wave
+% rho_L = 1*ones(1,jmax/2);
+% rho_R = 0.2641*ones(1,jmax/2);
+% rho0 = [rho_L rho_R];
+% u0 = [0*ones(1,jmax/2)  3.6*ones(1,jmax/2)];
+% v0 = [0*ones(1,jmax/2)   -2.551*ones(1,jmax/2)];
+% w0 = zeros(1,jmax);
+% p_L = 2*ones(1,jmax/2);
+% p_R = 0.2175*ones(1,jmax/2);
+% p0 = [p_L p_R];
+% By_L = 3*ones(1,jmax/2);
+% By_R = 0*ones(1,jmax/2);
+% By0 = [By_L By_R];
+% Bz0 = 0.00*ones(1,jmax);
+% Bx0 =1*ones(1,jmax);
+
+%Fast Shock wave
+% rho_L = 3*ones(1,jmax/2);
+% rho_R = 1*ones(1,jmax/2);
+% rho0 = [rho_L rho_R];
+% u0 = [-0.732*ones(1,jmax/2)  -4.196*ones(1,jmax/2)];
+% v0 = [-1.333*ones(1,jmax/2)   zeros(1,jmax/2)];
+% w0 = zeros(1,jmax);
+% p_L = 16.33*ones(1,jmax/2);
+% p_R = 1*ones(1,jmax/2);
+% p0 = [p_L p_R];
+% By_L = 2.309*ones(1,jmax/2);
+% By_R = 0*ones(1,jmax/2);
+% By0 = [By_L By_R];
+% Bz0 = 0.00*ones(1,jmax);
+% Bx0 =3*ones(1,jmax);
+
+%Xeno
+%cp = 160; 
+%cv = 97; %Xeno¨
+%R = cp-cv;
+% gamma = cp/cv
+
+%Aria
+gamma = 2
+cp = 1005;
+cv = cp/gamma;
+R = 287.05; % J/(kg*K)
+
+T0 = p0./(R*rho0);
+a0 = sqrt(gamma*p0./rho0);
+e0 = cv*T0;       %energia interna
+h0 = cp*T0;       % entalpia
+kinen0 = u0.^2/2;   
+%E0 = e0 + 1/2*(u0.^2 + v0.^2 + w0.^2) + (Bx0.^2 + By0.^2 + Bz0.^2)/(2);
+E0 = p0/(gamma-1) + 1/2*rho0.*(u0.^2 + v0.^2 + w0.^2)  + (Bx0.^2 + By0.^2 + Bz0.^2)/(2);
+%%%%%%%%%%%%%%%%%%%%%%%%%%E0 = p0./(gamma-1)  + rho0.*(u0.^2 +v0.^2 + w0.^2)./2 + (Bx0.^2 + By0.^2 + Bz0.^2)/(8*pi);
+%%%%%%%%%%%%%%%%%%%%%%%%%%p0 = (gamma-1)*(E0 - 1/2*rho0.*(u0.^2 + v0.^2 + w0.^2)./2 - 1/2*(Bx0.^2 + By0.^2 + Bz0.^2)) ;
+p_star0 = p0 + 1/2*(Bx0.^2 + By0.^2 + Bz0.^2);
+
+U0 = [rho0 ; rho0.*u0 ; rho0.*v0 ; rho0.*w0 ; By0 ; Bz0 ; E0];
+F0 = [rho0.*u0 ; rho0.*u0.^2+p_star0-Bx0.^2 ; rho0.*u0.*v0 - Bx0.*By0 ; rho0.*u0.*w0 - Bx0.*Bz0 ; By0.*u0 - Bx0.*v0 ; Bz0.*u0 - Bx0.*w0 ; u0.*(E0+p_star0)-Bx0.*(Bx0.*u0 + By0.*v0 + Bz0.*w0)];
+
+
+
+U = [];
+U(:,:) = U0;
+F = [];
+F(:,:) = F0;
+a_n = a0;
+u_n = u0;
+
+U_int = [];   %Matrice che contiene le soluzioni intermedie a n+1/2
+F_int = [];
+U_int_n =[];
+
+U_n = [];    %Matrice che contiene le soluzioni ad ogni passo temporale, aggiornata alla fine di ogni passo temporale del ciclo for n=1:nmax
+F_n = [];
+
+%dobbiamo creare il vettore del tempo da riempire successivamente in quanto
+%la RISOLUZIONE TEMPORALE È ADATTIVA
+T = [];
+t = 0;
+
+%inizializzazione matrici contenenti le distribuzioni a tutti gli step
+%temporali di ognuna delle variabili primitive:
+RHO = rho0;
+P = p0;
+Ux = u0;
+Vy = v0;
+Wz = w0;
+Bx = Bx0;
+By = By0;
+Bz = Bz0;
+E = E0;
+
+figure(1)
+title('Tubo d''urto - 800 nodi - test Brio-Wu - B attivo')
+frame_h = get(handle(gcf),'JavaFrame');  %queste stringhe servono per far comparire il grafico a tutto schermo
+set(frame_h,'Maximized',1);
+pause(0.0001)
+
+% tau = 0.475*h/max(abs(a0));
+
+nmax = 1000;
+
+for n = 1 : nmax-1   %il numero di passi intermedi "n+1/2" è pari a nmax-1
+    
+lambdamax = max(abs(u_n)+a_n);
+tau = 0.5*h/lambdamax;
+
+        
+            for j = 1 : jmax-1   % il numero di interfacce tra i nodi è pari a jmax-1
+        
+       %5.79 Eleuterio F. Toro  
+       
+       %Calcoliamo la soluzione alla j+1/2-esima interfaccia al passo temporale n+1/2
+       U_int_n_j = (U(7*n-6:7*n,j+1) + U(7*n-6:7*n,j))/2 - (tau/(2*h))*(F(7*n-6:7*n,j+1) - F(7*n-6:7*n,j));
+       
+     
+         %  U_int_n_j(7*n-6,:) = 
+       
+  %Componiamo la matrice contenente la soluzione a tutte le interfacce
+       U_int_n = [U_int_n U_int_n_j];  
+            end
+    %Calcoliamo le variabili primitive e da queste le termodinamiche per
+    %calcolare i flussi intermedi
+    rho_int_n = U_int_n(1,:);
+    u_int_n = U_int_n(2,:)./rho_int_n;
+    v_int_n = U_int_n(3,:)./rho_int_n;
+    w_int_n = U_int_n(4,:)./rho_int_n;
+    By_int_n = U_int_n(5,:);
+    Bz_int_n = U_int_n(6,:);
+    Bx_int_n = Bx0(2:end);
+    E_int_n = U_int_n(7,:);
+    %p_int_n = (gamma-1)*rho_int_n.*(E_int_n - 1/2*(u_int_n.^2 + v_int_n.^2 + w_int_n.^2) - 1/2*(Bx_int_n.^2 + By_int_n.^2 + Bz_int_n.^2) );
+ p_int_n = (gamma-1)*(E_int_n - 1/2*rho_int_n.*(u_int_n.^2 + v_int_n.^2 + w_int_n.^2) - 1/2*(Bx_int_n.^2 + By_int_n.^2 + Bz_int_n.^2) );
+    p_star_int_n = p_int_n + 1/2*(Bx_int_n.^2 + By_int_n.^2 + Bz_int_n.^2);
+%     p_star_int_n = Bx_int_n - U_int_n(2,:);
+%     p_int_n = p_star_int_n - 1/2*(Bx_int_n.^2 + By_int_n.^2 + Bz_int_n.^2);
+    a_int_n = sqrt(abs(gamma*p_star_int_n./rho_int_n));
+    
+   % T_int_n = E_int_n/cv;
+    %siamo quindi in grado di scrivere i flussi alle interfacce al passo
+    %intermedio n+1/2
+    F_int_n = [rho_int_n.*u_int_n ; rho_int_n.*u_int_n.^2+p_star_int_n-Bx_int_n.^2 ; rho_int_n.*u_int_n.*v_int_n - Bx_int_n.*By_int_n ; rho_int_n.*u_int_n.*w_int_n - Bx_int_n.*Bz_int_n ; By_int_n.*u_int_n - Bx_int_n.*v_int_n ; Bz_int_n.*u_int_n - Bx_int_n.*w_int_n ; u_int_n.*(E_int_n+p_star_int_n)-Bx_int_n.*(Bx_int_n.*u_int_n + By_int_n.*v_int_n + Bz_int_n.*w_int_n)];
+    
+    U_int = [U_int ; U_int_n];
+    F_int = [F_int ; F_int_n];
+    
+    
+           %SECONDO PASSO
+%            
+%         lambdamax = max(abs(u_n)+a_n);
+%         tau = h/lambdamax;
+
+ for j = 1 : jmax-2
+     
+     U_n_j = (U_int_n(1:7,j+1) + U_int_n(1:7,j))/2 - (tau/(2*h)).* (F_int_n(1:7,j+1) - F_int_n(1:7,j));
+     %si potrebbe modificare il secondo step per ottenere
+     %U_n_j = U_int_n(1:7,j) - (tau/h).* (F_int_n(1:7,j+1) - F_int_n(1:7,j));
+     U_n = [U_n U_n_j]; 
+ end
+
+ %È necessario adeguare le dimensione della U_n per accodarla alla matrice delle soluzioni a tutti i tempi successivi U:
+ %La matrice U_n è composta da jmax-2 colonne poichè calcolata a partire
+ %dai valori alle j-1 interfacce al passo intermedio n+1/2
+ 
+U_n_agg = [U_n(1:7,1)  U_n  U_n(1:7,end)];  %prima di aggiungere il valore delle variabili dipendenti al passo n alla U è necessario renderla della stessa Dimensione,
+%questo passaggio consente anche di inserire le condizioni al contorno
+%radiative!
+U = [U ; U_n_agg];
+
+%Calcoliamo le variabili primitive e da queste le termodinamiche per
+    %calcolare i flussi necessari per il primo passo dello step temporale
+    %successivo:
+    
+    rho_n = U_n_agg(1,:);
+    u_n = U_n_agg(2,:)./rho_n;
+    v_n = U_n_agg(3,:)./rho_n;
+    w_n = U_n_agg(4,:)./rho_n;
+    By_n = U_n_agg(5,:);
+    Bz_n = U_n_agg(6,:);
+    Bx_n = Bx0(1:end);
+    E_n = U_n_agg(7,:);
+%     p_n = (gamma-1)*rho_n.*(E_n - 1/2*(u_n.^2 + v_n.^2 + w_n.^2) - 1/2*(Bx_n.^2 + By_n.^2 + Bz_n.^2)) ;
+    p_n = (gamma-1)*(E_n - 1/2*rho_n.*(u_n.^2 + v_n.^2 + w_n.^2) - 1/2*(Bx_n.^2 + By_n.^2 + Bz_n.^2)) ;
+    p_star_n = p_n + 1/2*(Bx_n.^2 + By_n.^2 + Bz_n.^2);
+%     p_star_n = Bx_n - U_n_agg(2,:);
+%     p_n = p_star_n - 1/2*(Bx_n.^2 + By_n.^2 + Bz_n.^2);
+    
+    a_n = sqrt(abs(gamma*p_star_n./rho_n));
+    
+    %Calcolo dei flussi per il primo passo LF dello step temporale
+    %successivo
+    F_n = [rho_n.*u_n ; rho_n.*u_n.^2+p_star_n-Bx_n.^2 ; rho_n.*u_n.*v_n - Bx_n.*By_n ; rho_n.*u_n.*w_n - Bx_n.*Bz_n ; By_n.*u_n - Bx_n.*v_n ; Bz_n.*u_n - Bx_n.*w_n ; u_n.*(E_n+p_star_n)-Bx_n.*(Bx_n.*u_n + By_n.*v_n + Bz_n.*w_n)];
+    F = [F ; F_n];
+    
+    %Aggiungiamo le righe relative le distribuzioni delle variabili
+    %primitive appena calcolate all'n-esimo step temporale:
+ RHO = [RHO ; rho_n];
+P = [P ; p_n];
+Ux = [Ux ; u_n];
+Vy = [Vy ; v_n];
+Wz = [Wz ; w_n];
+Bx = [Bx ; Bx_n];
+By = [By ; By_n];
+Bz = [Bz ; Bz_n];
+E = [E ; E_n];
+    
+    
+%Prima della chiusara di ogni step del ciclo for è necessario svuotare le
+%matrici di passaggio che altrimenti vengono allungate per multipli di jmax
+%!!!
+U_int_n = [];   %è stata precedentemente aggiunta alla matrice U_int, a 3 a 3
+U_n_agg = []; % è stata precedentemente aggiunta alla matrice U
+U_n=[];   % come per le precedenti è necessario svuotarla prima di ogni step del ciclo for 
+F_int_n = [];
+    
+
+pause(0.0001)
+            
+%Attivare i seguenti comandi per visualizzare la soluzione in tempo reale.
+
+            subplot(3,2,1)
+            plot(x,rho_n,'k')
+            title('densità')
+            grid on
+% hold on
+%          plot(0.5*ones(1,length(x)),linspace(min(rho0),max(rho0),length(x)),'k-.')
+%          hold off
+         legend(strcat('t = ', num2str(t+tau),' s'));
+         xlabel('x (m)');
+     ylabel('Density (kg/m^3)');
+     
+     subplot(3,2,2)
+            plot(x,Bx_n,'k')
+            title('Bx [T]')
+            grid on
+% hold on
+%          plot(0.5*ones(1,length(x)),linspace(min(rho0),max(rho0),length(x)),'k-.')
+%          hold off
+         %legend(strcat('t = ', num2str(t+tau),' s'));
+         xlabel('x (m)');
+     ylabel('Bx (T)');
+         
+         subplot(3,2,3)
+         plot(x,u_n,'k')
+         title('u')
+         xlabel('x (m)');
+         ylabel('u (m/s)');
+         legend(strcat('n = ', num2str(n)));
+         grid on
+         
+         
+         subplot(3,2,4)
+         plot(x,v_n,'k')
+         title('v')
+         xlabel('x (m)');
+         ylabel('v (m/s)');
+         grid on
+         
+         subplot(3,2,6)
+         plot(x,By_n,'k')
+         title('By')
+          title('By ')
+         xlabel('x (m)');
+         ylabel('By  (T)');
+         grid on
+         
+         subplot(3,2,5)
+         plot(x,p_n,'k')
+         title('pressione ')
+         xlabel('x (m)');
+         ylabel('Pressione  (Pa)');
+         grid on
+         %axis([0 2 0 1.2])
+         
+       t = t+tau;
+     T = [T tau];
+end
+
+figure(2)
+%subplot(3,2,1)
+            plot(x,rho_n,'k','LineWidth',0.7)
+            title('densità')
+            grid on
+hold on
+         plot(0.5*ones(1,length(x)),linspace(min(rho0),max(rho0),length(x)),'k-.')
+         hold off
+         legend(strcat('t = ', num2str(t+tau),' s'));
+         xlabel('x (m)');
+     ylabel('Density (kg/m^3)');
+     
+  figure(3)   
+%      subplot(3,2,2)
+            plot(x,Bx_n,'k','LineWidth',0.7)
+            title('Bx [T]')
+            grid on
+         %legend(strcat('t = ', num2str(t+tau),' s'));
+         xlabel('x (m)');
+     ylabel('Bx (T)');
+  
+        figure(4)
+     %subplot(3,2,3)
+         plot(x,u_n,'k','LineWidth',0.7)
+         title('u')
+         xlabel('x (m)');
+         ylabel('u (m/s)');
+         legend(strcat('n = ', num2str(n)));
+         grid on
+        
+         figure(5)
+         %subplot(3,2,4)
+         plot(x,v_n,'k','LineWidth',0.7)
+         hold on
+         plot(x,w_n,'r','LineWidth',0.7)
+         hold off
+         title('v tangenziale')
+         xlabel('x (m)');
+         ylabel('v,w (m/s)');
+         legend('v' , 'w ')
+         grid on
+        
+        figure(6)
+         %subplot(3,2,6)
+         plot(x,By_n,'k','LineWidth',0.7)
+         hold on
+         plot(x,Bz_n,'r','LineWidth',0.7)
+         hold off
+         title('By')
+         title('B tangenziale ')
+         xlabel('x (m)');
+         ylabel('By , Bz  (T)');
+         legend('By' , 'Bz  ')
+         grid on
+       
+         
+         figure(7)
+         %subplot(3,2,5)
+         plot(x,p_n,'k','LineWidth',0.7)
+         title('pressione ')
+         xlabel('x (m)');
+         ylabel('Pressione  (Pa)');
+         grid on
+         %axis([0 2 0 1.2])
+         hold on
+         plot(0.5*ones(1,length(x)),linspace(min(rho0),max(rho0),length(x)),'k-.')
+         hold off
+
